@@ -399,7 +399,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       }
     }
   }
-  
+
   public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
     List<String> configs = new ArrayList<>();
     for (File file : getResourceFolderFiles()) {
@@ -407,19 +407,22 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       configs.add(file.getName());
     }
     return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
+      JsonObject config = setProfile(loadedConfigs, new String[]{"default"});
       if (profiles != null && !profiles.isEmpty()) {
-        setProfile(loadedConfigs, profiles.toArray(new String[0]));
+        config = setProfile(loadedConfigs, profiles.toArray(new String[0]));
       }
       if (args != null && !args.isEmpty()) {
-        args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
-          .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","))
-          .ifPresent(strings -> setProfile(loadedConfigs, strings));
+        Optional<String[]> aProfiles = args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
+          .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","));
+        if (aProfiles.isPresent()) {
+          config = setProfile(loadedConfigs, aProfiles.get());
+        }
       }
       String env = System.getenv("VERTX_PROFILES");
       if (env != null) {
-        setProfile(loadedConfigs, env.split(","));
+        config = setProfile(loadedConfigs, env.split(","));
       }
-      return loadedConfigs;
+      return config;
     });
   }
 
@@ -431,7 +434,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
         LOGGER.warn("profile " + profile + " not found!");
         continue;
       }
-      defaultConfig.mergeIn(value, true);
+      copySet(value, defaultConfig);
     }
     return defaultConfig;
   }
@@ -439,6 +442,9 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
   private File[] getResourceFolderFiles() {
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
     URL url = loader.getResource("");
+    if (url == null) {
+      throw new RuntimeException("resource is null");
+    }
     String path = url.getPath();
     return new File(path).listFiles();
   }
@@ -476,5 +482,14 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     return ConfigRetriever.create(vertx, new ConfigRetrieverOptions().addStore(configStoreOpt)).getConfig();
   }
 
+  private void copySet(JsonObject from, JsonObject to) {
+    for (String fieldName : from.fieldNames()) {
+      if (from.getValue(fieldName) instanceof JsonObject && to.getValue(fieldName) instanceof JsonObject) {
+        copySet((JsonObject) from.getValue(fieldName), (JsonObject) to.getValue(fieldName));
+      } else {
+        to.put(fieldName, from.getValue(fieldName));
+      }
+    }
+  }
 
 }
