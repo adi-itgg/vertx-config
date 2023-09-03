@@ -32,8 +32,10 @@ import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.streams.ReadStream;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -397,4 +399,84 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       }
     }
   }
+
+  @Override
+  public Future<JsonObject> load(Vertx vertx, String format, String[] args, String... profiles) {
+    List<String> configs = new ArrayList<>();
+    for (File file : getResourceFolderFiles()) {
+      if (!file.getName().endsWith("." + format) || file.getName().startsWith("config." + format)) continue;
+      configs.add(file.getName());
+    }
+    return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
+      if (profiles != null && profiles.length > 0) {
+        setProfile(loadedConfigs, profiles);
+      }
+      if (args != null && args.length > 0) {
+        Arrays.stream(args)
+          .filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
+          .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","))
+          .ifPresent(strings -> setProfile(loadedConfigs, strings));
+      }
+      String env = System.getenv("VERTX_PROFILES");
+      if (env != null) {
+        setProfile(loadedConfigs, env.split(","));
+      }
+      return loadedConfigs;
+    });
+  }
+
+  private JsonObject setProfile(JsonObject loadedConfigs, String[] profiles) {
+    JsonObject defaultConfig = loadedConfigs.getJsonObject("default");
+    for (String profile : profiles) {
+      JsonObject value = loadedConfigs.getJsonObject(profile);
+      if (value == null) {
+        LOGGER.warn("profile " + profile + " not found!");
+        continue;
+      }
+      defaultConfig.mergeIn(value, true);
+    }
+    return defaultConfig;
+  }
+
+  private File[] getResourceFolderFiles() {
+    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    URL url = loader.getResource("");
+    String path = url.getPath();
+    return new File(path).listFiles();
+  }
+
+  private Future<JsonObject> loadConfigs(Vertx vertx, String defaultConfig, String... configs) {
+    List<Future<JsonObject>> futures = new ArrayList<>();
+    futures.add(loadFileConfig(vertx, defaultConfig));
+    for (String config : configs) {
+      futures.add(loadFileConfig(vertx, config));
+    }
+    return Future.all(futures).map(compositeFuture -> {
+      JsonObject loadedConfigs = JsonObject.of();
+      for (int i = 0; i < compositeFuture.size(); i++) {
+        JsonObject config = compositeFuture.resultAt(i);
+        if (i == 0) {
+          loadedConfigs.put("default", config);
+          continue;
+        }
+        String profile = config.getString("profile");
+        if (profile == null) {
+          final String filename = FilenameUtils.getName(configs[i - 1]);
+          profile = filename.substring(7, filename.length() - 4);
+        }
+        loadedConfigs.put(profile, config);
+      }
+      return loadedConfigs;
+    });
+  }
+
+  private Future<JsonObject> loadFileConfig(Vertx vertx, String filePath) {
+    File file = new File(filePath);
+    ConfigStoreOptions configStoreOpt = new ConfigStoreOptions()
+      .setType("file").setFormat(FilenameUtils.getExtension(filePath))
+      .setConfig(io.vertx.core.json.JsonObject.of("path", file.getPath()));
+    return ConfigRetriever.create(vertx, new ConfigRetrieverOptions().addStore(configStoreOpt)).getConfig();
+  }
+
+
 }

@@ -104,6 +104,11 @@
       <artifactId>vertx-docgen</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.12.0</version>
+    </dependency>
 
     <dependency>
       <groupId>io.vertx</groupId>

@@ -127,4 +127,6 @@ public interface ConfigRetriever {
   @CacheReturn
   ReadStream<JsonObject> configStream();
 
+  Future<JsonObject> load(Vertx vertx, String format, String[] args, String... profiles);
+
 }
