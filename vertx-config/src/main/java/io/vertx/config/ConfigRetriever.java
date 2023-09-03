@@ -30,6 +30,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.streams.ReadStream;
 
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -127,6 +128,6 @@ public interface ConfigRetriever {
   @CacheReturn
   ReadStream<JsonObject> configStream();
 
-  Future<JsonObject> load(Vertx vertx, String format, String[] args, String... profiles);
+  Future<JsonObject> load(Vertx vertx, String format, List<String> args, String... profiles);
 
 }
