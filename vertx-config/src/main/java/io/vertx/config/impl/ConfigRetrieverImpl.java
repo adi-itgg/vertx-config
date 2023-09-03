@@ -407,27 +407,24 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       configs.add(file.getName());
     }
     return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
-      JsonObject config = setProfile(loadedConfigs, new String[]{"default"});
+      JsonObject config = setProfile(loadedConfigs, JsonObject.of(), new String[]{"default"});
       if (profiles != null && !profiles.isEmpty()) {
-        config = setProfile(loadedConfigs, profiles.toArray(new String[0]));
+        setProfile(loadedConfigs, config, profiles.toArray(new String[0]));
       }
       if (args != null && !args.isEmpty()) {
         Optional<String[]> aProfiles = args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
           .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","));
-        if (aProfiles.isPresent()) {
-          config = setProfile(loadedConfigs, aProfiles.get());
-        }
+          aProfiles.ifPresent(strings -> setProfile(loadedConfigs, config, strings));
       }
       String env = System.getenv("VERTX_PROFILES");
       if (env != null) {
-        config = setProfile(loadedConfigs, env.split(","));
+        setProfile(loadedConfigs, config, env.split(","));
       }
       return config;
     });
   }
 
-  private JsonObject setProfile(JsonObject loadedConfigs, String[] profiles) {
-    JsonObject defaultConfig = loadedConfigs.getJsonObject("default");
+  private JsonObject setProfile(JsonObject loadedConfigs, JsonObject defaultConfig, String[] profiles) {
     for (String profile : profiles) {
       JsonObject value = loadedConfigs.getJsonObject(profile);
       if (value == null) {
