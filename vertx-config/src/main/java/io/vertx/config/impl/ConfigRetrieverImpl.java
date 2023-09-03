@@ -468,6 +468,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
           final String filename = FilenameUtils.getName(configs[i - 1]);
           profile = filename.substring(7, filename.length() - 4);
         }
+        config.put("profile", profile);
         loadedConfigs.put(profile, config);
       }
       return loadedConfigs;
