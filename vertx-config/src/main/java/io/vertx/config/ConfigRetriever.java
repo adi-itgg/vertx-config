@@ -128,6 +128,6 @@ public interface ConfigRetriever {
   @CacheReturn
   ReadStream<JsonObject> configStream();
 
-  Future<JsonObject> load(Vertx vertx, String format, List<String> args, String... profiles);
+  Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles);
 
 }

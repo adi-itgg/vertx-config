@@ -401,15 +401,15 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
   }
 
   @Override
-  public Future<JsonObject> load(Vertx vertx, String format, List<String> args, String... profiles) {
+  public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
     List<String> configs = new ArrayList<>();
     for (File file : getResourceFolderFiles()) {
       if (!file.getName().endsWith("." + format) || file.getName().startsWith("config." + format)) continue;
       configs.add(file.getName());
     }
     return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
-      if (profiles != null && profiles.length > 0) {
-        setProfile(loadedConfigs, profiles);
+      if (profiles != null && !profiles.isEmpty()) {
+        setProfile(loadedConfigs, profiles.toArray(new String[0]));
       }
       if (args != null && !args.isEmpty()) {
         args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
