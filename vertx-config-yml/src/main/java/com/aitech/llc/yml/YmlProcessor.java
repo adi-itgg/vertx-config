@@ -69,7 +69,7 @@ public class YmlProcessor implements ConfigProcessor {
       }
       json.put(kv.getKey().toString(), value);
 
-      final String env = ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase();
+      final String env = path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase();
       Map<String, String> envs = System.getenv();
       if (envs.containsKey(env)) {
         Object envValue = System.getenv(env);
