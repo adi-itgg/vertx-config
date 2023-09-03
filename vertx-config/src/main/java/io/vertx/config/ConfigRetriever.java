@@ -128,6 +128,16 @@ public interface ConfigRetriever {
   @CacheReturn
   ReadStream<JsonObject> configStream();
 
-  Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles);
+  /**
+   *
+   * @param vertx
+   * @param format like yml
+   * @param args program start
+   * @param profiles set active profiles
+   * @return loaded config
+   */
+  static Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
+    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, format, args, profiles);
+  }
 
 }

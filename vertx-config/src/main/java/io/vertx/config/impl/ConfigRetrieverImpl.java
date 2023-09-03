@@ -399,8 +399,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       }
     }
   }
-
-  @Override
+  
   public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
     List<String> configs = new ArrayList<>();
     for (File file : getResourceFolderFiles()) {
