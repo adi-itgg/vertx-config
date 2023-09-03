@@ -9,8 +9,7 @@
     <version>4.4.5</version>
   </parent>
 
-  <groupId>com.aitech.llc.yml</groupId>
-  <artifactId>vertx-config-yml</artifactId>
+  <artifactId>com.aitech.llc.yml</artifactId>
 
   <properties>
     <doc.skip>false</doc.skip>
