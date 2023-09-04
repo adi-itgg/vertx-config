@@ -402,6 +402,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
 
   public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
     List<String> configs = new ArrayList<>();
+    List<String> reqProfiles = new ArrayList<>();
     for (File file : getResourceFolderFiles()) {
       if (!file.getName().endsWith("." + format) || file.getName().startsWith("config." + format)) continue;
       configs.add(file.getName());
@@ -409,18 +410,30 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
       JsonObject config = setProfile(loadedConfigs, JsonObject.of(), new String[]{"default"});
       if (profiles != null && !profiles.isEmpty()) {
+        reqProfiles.addAll(profiles);
         setProfile(loadedConfigs, config, profiles.toArray(new String[0]));
       }
       if (args != null && !args.isEmpty()) {
         Optional<String[]> aProfiles = args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
           .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","));
-          aProfiles.ifPresent(strings -> setProfile(loadedConfigs, config, strings));
+          aProfiles.ifPresent(strings -> {
+            Collections.addAll(reqProfiles, strings);
+            setProfile(loadedConfigs, config, strings);
+          });
       }
       String env = System.getenv("VERTX_PROFILES");
       if (env != null) {
-        setProfile(loadedConfigs, config, env.split(","));
+        String[] envProfiles = env.split(",");
+        Collections.addAll(reqProfiles, envProfiles);
+        setProfile(loadedConfigs, config, envProfiles);
       }
       return config;
+    }).andThen(result -> {
+      if (result.succeeded()) {
+        LOGGER.info("active profiles: " + String.join(",", reqProfiles));
+      } else {
+        LOGGER.error("load config failed cause: " + result.cause().getMessage(), result.cause());
+      }
     });
   }
 
