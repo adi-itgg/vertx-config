@@ -407,7 +407,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       if (!file.getName().endsWith("." + format) || file.getName().startsWith("config." + format)) continue;
       configs.add(file.getName());
     }
-    return loadConfigs(vertx, configs.get(0), configs.toArray(new String[0])).map(loadedConfigs -> {
+    return loadConfigs(vertx, "config." + format, configs.toArray(new String[0])).map(loadedConfigs -> {
       JsonObject config = setProfile(loadedConfigs, JsonObject.of(), new String[]{"default"});
       if (profiles != null && !profiles.isEmpty()) {
         reqProfiles.addAll(profiles);
