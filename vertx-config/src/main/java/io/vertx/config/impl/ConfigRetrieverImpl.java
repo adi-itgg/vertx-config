@@ -430,11 +430,20 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       return config;
     }).andThen(result -> {
       if (result.succeeded()) {
+        setTimeDefaults(result.result());
         LOGGER.info("active profiles: " + String.join(",", reqProfiles));
       } else {
         LOGGER.error("load config failed cause: " + result.cause().getMessage(), result.cause());
       }
     });
+  }
+
+  private void setTimeDefaults(JsonObject config) {
+    String envPrefix = config.getString("env-prefix", "").toUpperCase();
+    String env = System.getenv(envPrefix + "_LOCATION");
+    String location = env != null ? env : config.getString("location", "Asia/Jakarta");
+    TimeZone.setDefault(TimeZone.getTimeZone(location));
+    Locale.setDefault(Locale.forLanguageTag(location));
   }
 
   private JsonObject setProfile(JsonObject loadedConfigs, JsonObject defaultConfig, String[] profiles) {
