@@ -59,7 +59,7 @@ public class YmlProcessor implements ConfigProcessor {
     final JsonObject json = new JsonObject();
 
     for (Map.Entry<Object, Object> kv : yaml.entrySet()) {
-      final String env = path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase();
+      final String env = (path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase()).replace("-", "");
       Object value = kv.getValue();
       if (value instanceof Map) {
         value = jsonify(env, (Map<Object, Object>) value);
@@ -72,12 +72,41 @@ public class YmlProcessor implements ConfigProcessor {
 
       Map<String, String> envs = System.getenv();
       if (envs.containsKey(env)) {
-        Object envValue = System.getenv(env);
-        json.put(kv.getKey().toString(), envValue);
+        String envValue = System.getenv(env);
+        if (isNumeric(envValue)) {
+          if (envValue.contains(".")) {
+            json.put(kv.getKey().toString(), Double.parseDouble(envValue));
+          } else {
+            json.put(kv.getKey().toString(), Long.parseLong(envValue));
+          }
+        } else {
+          json.put(kv.getKey().toString(), envValue);
+        }
       }
     }
 
     return json;
   }
+
+  private static boolean isEmpty(CharSequence cs) {
+    return cs == null || cs.length() == 0;
+  }
+
+  private static boolean isNumeric(CharSequence cs) {
+    if (isEmpty(cs)) {
+      return false;
+    } else {
+      int sz = cs.length();
+
+      for(int i = 0; i < sz; ++i) {
+        if (!Character.isDigit(cs.charAt(i))) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
 
 }
