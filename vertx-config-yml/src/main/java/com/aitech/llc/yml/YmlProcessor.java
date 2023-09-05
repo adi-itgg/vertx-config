@@ -59,9 +59,10 @@ public class YmlProcessor implements ConfigProcessor {
     final JsonObject json = new JsonObject();
 
     for (Map.Entry<Object, Object> kv : yaml.entrySet()) {
+      final String env = path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase();
       Object value = kv.getValue();
       if (value instanceof Map) {
-        value = jsonify((path.isEmpty() ? "" : "_") + path, (Map<Object, Object>) value);
+        value = jsonify(env, (Map<Object, Object>) value);
       }
       // snake yaml handles dates as java.util.Date, and JSON does Instant
       if (value instanceof Date) {
@@ -69,7 +70,6 @@ public class YmlProcessor implements ConfigProcessor {
       }
       json.put(kv.getKey().toString(), value);
 
-      final String env = path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase();
       Map<String, String> envs = System.getenv();
       if (envs.containsKey(env)) {
         Object envValue = System.getenv(env);
