@@ -77,7 +77,7 @@ public class YmlProcessor implements ConfigProcessor {
           if (envValue.contains(".")) {
             json.put(kv.getKey().toString(), Double.parseDouble(envValue));
           } else {
-            json.put(kv.getKey().toString(), Long.parseLong(envValue));
+            json.put(kv.getKey().toString(), Integer.parseInt(envValue));
           }
         } else {
           json.put(kv.getKey().toString(), envValue);
