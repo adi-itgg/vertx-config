@@ -35,9 +35,15 @@ import io.vertx.core.streams.ReadStream;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 /**
@@ -401,12 +407,10 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
   }
 
   public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
-    List<String> configs = new ArrayList<>();
+    List<String> configs = getResourceFiles(filename ->
+      filename.startsWith("config") && filename.endsWith("." + format) && !filename.equals("config." + format)
+    );
     List<String> reqProfiles = new ArrayList<>();
-    for (File file : getResourceFolderFiles()) {
-      if (!file.getName().endsWith("." + format) || file.getName().startsWith("config." + format)) continue;
-      configs.add(file.getName());
-    }
     return loadConfigs(vertx, "config." + format, configs.toArray(new String[0])).map(loadedConfigs -> {
       JsonObject config = setProfile(loadedConfigs, JsonObject.of(), new String[]{"default"});
       if (profiles != null && !profiles.isEmpty()) {
@@ -458,15 +462,52 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     return defaultConfig;
   }
 
-  private File[] getResourceFolderFiles() {
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    URL url = loader.getResource("");
-    if (url == null) {
-      throw new RuntimeException("resource is null");
+  private List<String> getResourceFiles(Predicate<String> filter) {
+    ProtectionDomain protectionDomain = ConfigRetriever.class.getProtectionDomain();
+    CodeSource codeSource = protectionDomain.getCodeSource();
+
+    List<String> filenames = new ArrayList<>();
+    if (codeSource != null) {
+      String executablePath = codeSource.getLocation().getPath();
+
+      if (executablePath.endsWith(".jar")) {
+        try {
+          JarFile jarFile = new JarFile(executablePath);
+          Enumeration<JarEntry> entries = jarFile.entries();
+
+          while (entries.hasMoreElements()) {
+            JarEntry entry = entries.nextElement();
+            String entryName = entry.getName();
+            if (filter.test(entryName)) {
+              filenames.add(entryName);
+            }
+          }
+
+          jarFile.close();
+          return filenames;
+        } catch (IOException e) {
+          LOGGER.error("failed read file jar!", e);
+        }
+      } else {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        URL url = loader.getResource("");
+        if (url == null) {
+          throw new RuntimeException("resource is null");
+        }
+        String path = url.getPath();
+        File[] files = Objects.requireNonNull(new File(path).listFiles());
+        for (File file : files) {
+          if (filter.test(file.getName())) {
+            filenames.add(file.getName());
+          }
+        }
+      }
+
     }
-    String path = url.getPath();
-    return new File(path).listFiles();
+    LOGGER.error("Resource files is missing!");
+    return filenames;
   }
+
 
   private Future<JsonObject> loadConfigs(Vertx vertx, String defaultConfig, String... configs) {
     List<Future<JsonObject>> futures = new ArrayList<>();
