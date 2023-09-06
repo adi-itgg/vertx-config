@@ -506,7 +506,9 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
       }
 
     }
-    LOGGER.error("Resource files is missing!");
+    if (filenames.isEmpty()) {
+      LOGGER.error("Resource files is missing!");
+    }
     return filenames;
   }
 
