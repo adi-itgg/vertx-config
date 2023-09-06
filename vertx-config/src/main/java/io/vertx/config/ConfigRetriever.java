@@ -131,14 +131,14 @@ public interface ConfigRetriever {
 
   /**
    *
-   * @param domain is main class domain
+   * @param instance any instance in your package
    * @param format like yml
    * @param args program start
    * @param profiles set active profiles
    * @return loaded config
    */
-  static Future<JsonObject> load(Vertx vertx, ProtectionDomain domain, String format, List<String> args, List<String> profiles) {
-    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, domain, format, args, profiles);
+  static Future<JsonObject> load(Vertx vertx, Object instance, String format, List<String> args, List<String> profiles) {
+    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, instance, format, args, profiles);
   }
 
 }
