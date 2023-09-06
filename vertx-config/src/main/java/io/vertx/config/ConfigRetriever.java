@@ -130,14 +130,14 @@ public interface ConfigRetriever {
 
   /**
    *
-   * @param vertx
+   * @param mainClazz is main class
    * @param format like yml
    * @param args program start
    * @param profiles set active profiles
    * @return loaded config
    */
-  static Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
-    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, format, args, profiles);
+  static Future<JsonObject> load(Vertx vertx, Class<Object> mainClazz, String format, List<String> args, List<String> profiles) {
+    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, mainClazz, format, args, profiles);
   }
 
 }

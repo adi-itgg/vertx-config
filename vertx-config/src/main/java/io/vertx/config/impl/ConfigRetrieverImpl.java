@@ -406,8 +406,8 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     }
   }
 
-  public Future<JsonObject> load(Vertx vertx, String format, List<String> args, List<String> profiles) {
-    List<String> configs = getResourceFiles(filename ->
+  public Future<JsonObject> load(Vertx vertx, Class<Object> mainClazz, String format, List<String> args, List<String> profiles) {
+    List<String> configs = getResourceFiles(mainClazz, filename ->
       filename.startsWith("config") && filename.endsWith("." + format) && !filename.equals("config." + format)
     );
     List<String> reqProfiles = new ArrayList<>();
@@ -464,8 +464,8 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     return defaultConfig;
   }
 
-  private List<String> getResourceFiles(Predicate<String> filter) {
-    ProtectionDomain protectionDomain = ConfigRetriever.class.getProtectionDomain();
+  private List<String> getResourceFiles(Class<Object> clazz, Predicate<String> filter) {
+    ProtectionDomain protectionDomain = clazz.getProtectionDomain();
     CodeSource codeSource = protectionDomain.getCodeSource();
 
     List<String> filenames = new ArrayList<>();
