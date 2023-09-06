@@ -36,7 +36,7 @@ public class YmlProcessor implements ConfigProcessor {
       try {
         final Yaml yamlMapper = new Yaml(new SafeConstructor(DEFAULT_OPTIONS));
         Map<Object, Object> doc = yamlMapper.load(input.toString(StandardCharsets.UTF_8));
-        return jsonify((String) doc.getOrDefault("env-prefix", ""), doc);
+        return jsonify((String) doc.getOrDefault("prop-prefix", ""), (String) doc.getOrDefault("env-prefix", ""), doc);
       } catch (ClassCastException e) {
         throw new DecodeException("Failed to decode YAML", e);
       }
@@ -51,7 +51,7 @@ public class YmlProcessor implements ConfigProcessor {
    * @return json map
    */
   @SuppressWarnings("unchecked")
-  private static JsonObject jsonify(String path, Map<Object, Object> yaml) {
+  private static JsonObject jsonify(String propPath, String envPath, Map<Object, Object> yaml) {
     if (yaml == null) {
       return null;
     }
@@ -59,10 +59,11 @@ public class YmlProcessor implements ConfigProcessor {
     final JsonObject json = new JsonObject();
 
     for (Map.Entry<Object, Object> kv : yaml.entrySet()) {
-      final String env = (path + ((path.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase()).replace("-", "");
+      final String prop = (propPath + ((propPath.isEmpty() ? "" : ".") + kv.getKey().toString()).toLowerCase()); // for best practice props require lowercase!
+      final String env = (envPath + ((envPath.isEmpty() ? "" : "_") + kv.getKey().toString()).toUpperCase()).replace("-", "");
       Object value = kv.getValue();
       if (value instanceof Map) {
-        value = jsonify(env, (Map<Object, Object>) value);
+        value = jsonify(prop, env, (Map<Object, Object>) value);
       }
       // snake yaml handles dates as java.util.Date, and JSON does Instant
       if (value instanceof Date) {
@@ -70,22 +71,29 @@ public class YmlProcessor implements ConfigProcessor {
       }
       json.put(kv.getKey().toString(), value);
 
-      Map<String, String> envs = System.getenv();
-      if (envs.containsKey(env)) {
-        String envValue = System.getenv(env);
-        if (isNumeric(envValue)) {
-          if (envValue.contains(".")) {
-            json.put(kv.getKey().toString(), Double.parseDouble(envValue));
-          } else {
-            json.put(kv.getKey().toString(), Integer.parseInt(envValue));
-          }
-        } else {
-          json.put(kv.getKey().toString(), envValue);
-        }
+      String envValue = System.getenv(env);
+      if (envValue != null) {
+        json.put(kv.getKey().toString(), parseData(envValue));
       }
+
+      String propValue = System.getProperty(prop);
+      if (propValue != null) {
+        json.put(kv.getKey().toString(), parseData(propValue));
+      }
+
     }
 
     return json;
+  }
+
+  private static Object parseData(String value) {
+    if (isNumeric(value)) {
+      if (value.contains(".")) {
+        return Double.parseDouble(value);
+      }
+      return Integer.parseInt(value);
+    }
+    return value;
   }
 
   private static boolean isEmpty(CharSequence cs) {

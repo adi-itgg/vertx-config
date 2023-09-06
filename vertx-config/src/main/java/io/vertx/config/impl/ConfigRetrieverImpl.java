@@ -417,6 +417,12 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
         reqProfiles.addAll(profiles);
         setProfile(loadedConfigs, config, profiles.toArray(new String[0]));
       }
+      String env = System.getenv("VERTX_PROFILES");
+      if (env != null) {
+        String[] envProfiles = env.split(",");
+        Collections.addAll(reqProfiles, envProfiles);
+        setProfile(loadedConfigs, config, envProfiles);
+      }
       if (args != null && !args.isEmpty()) {
         Optional<String[]> aProfiles = args.stream().filter(arg -> arg.toLowerCase().startsWith("--profiles=") || arg.toLowerCase().startsWith("-p=")).findFirst()
           .map(p -> (p.startsWith("-p=") ? p.substring(3) : p.substring("--profiles=".length())).split(","));
@@ -424,12 +430,6 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
             Collections.addAll(reqProfiles, strings);
             setProfile(loadedConfigs, config, strings);
           });
-      }
-      String env = System.getenv("VERTX_PROFILES");
-      if (env != null) {
-        String[] envProfiles = env.split(",");
-        Collections.addAll(reqProfiles, envProfiles);
-        setProfile(loadedConfigs, config, envProfiles);
       }
       return config;
     }).andThen(result -> {
@@ -444,8 +444,10 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
 
   private void setTimeDefaults(JsonObject config) {
     String envPrefix = config.getString("env-prefix", "").toUpperCase();
-    String env = System.getenv(envPrefix + "_LOCATION");
-    String location = env != null ? env : config.getString("location", "Asia/Jakarta");
+    String env = System.getenv((envPrefix.isEmpty() ? "" : "_") + "LOCATION");
+    String propPrefix = config.getString("prop-prefix", "").toLowerCase();
+    String prop = System.getenv((propPrefix.isEmpty() ? "" : ".") + "location");
+    String location = prop != null ? prop : (env != null ? env : config.getString("location", "Asia/Jakarta"));
     TimeZone.setDefault(TimeZone.getTimeZone(location));
     Locale.setDefault(Locale.forLanguageTag(location));
   }
