@@ -30,6 +30,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.streams.ReadStream;
 
+import java.security.ProtectionDomain;
 import java.util.List;
 import java.util.function.Function;
 
@@ -130,14 +131,14 @@ public interface ConfigRetriever {
 
   /**
    *
-   * @param mainClazz is main class
+   * @param domain is main class domain
    * @param format like yml
    * @param args program start
    * @param profiles set active profiles
    * @return loaded config
    */
-  static Future<JsonObject> load(Vertx vertx, Class<Object> mainClazz, String format, List<String> args, List<String> profiles) {
-    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, mainClazz, format, args, profiles);
+  static Future<JsonObject> load(Vertx vertx, ProtectionDomain domain, String format, List<String> args, List<String> profiles) {
+    return ((ConfigRetrieverImpl) create(vertx)).load(vertx, domain, format, args, profiles);
   }
 
 }
