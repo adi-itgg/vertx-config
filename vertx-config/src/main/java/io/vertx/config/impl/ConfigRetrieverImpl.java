@@ -431,6 +431,12 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
             setProfile(loadedConfigs, config, strings);
           });
       }
+      String prop = System.getProperty("vertx.profiles");
+      if (prop != null) {
+        String[] propProfiles = prop.split(",");
+        Collections.addAll(reqProfiles, propProfiles);
+        setProfile(loadedConfigs, config, propProfiles);
+      }
       return config;
     }).andThen(result -> {
       if (result.succeeded()) {
@@ -446,7 +452,7 @@ public class ConfigRetrieverImpl implements ConfigRetriever {
     String envPrefix = config.getString("env-prefix", "").toUpperCase();
     String env = System.getenv((envPrefix.isEmpty() ? "" : "_") + "LOCATION");
     String propPrefix = config.getString("prop-prefix", "").toLowerCase();
-    String prop = System.getenv((propPrefix.isEmpty() ? "" : ".") + "location");
+    String prop = System.getProperty((propPrefix.isEmpty() ? "" : ".") + "location");
     String location = prop != null ? prop : (env != null ? env : config.getString("location", "Asia/Jakarta"));
     TimeZone.setDefault(TimeZone.getTimeZone(location));
     Locale.setDefault(Locale.forLanguageTag(location));
