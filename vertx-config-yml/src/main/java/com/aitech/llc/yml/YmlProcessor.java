@@ -12,8 +12,13 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class YmlProcessor implements ConfigProcessor {
 
@@ -87,34 +92,46 @@ public class YmlProcessor implements ConfigProcessor {
   }
 
   private static Object parseData(String value) {
-    if (isNumeric(value)) {
-      if (value.contains(".")) {
-        return Double.parseDouble(value);
+    if (value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
+      return value.substring(1, value.length() - 1);
+    }
+    return tries(value,
+      Long::parseLong,
+      Double::parseDouble,
+      Boolean::parseBoolean,
+      (v) -> {
+        if (v.charAt(0) == '[' && v.charAt(v.length() - 1) == ']') {
+          String input = v.substring(1, v.length() - 1);
+          Pattern pattern = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+          Matcher matcher = pattern.matcher(input);
+          List<Object> data = new ArrayList<>();
+          int lastIndex = 0;
+          while (matcher.find()) {
+            String c = input.substring(lastIndex, matcher.start());
+            lastIndex = matcher.end();
+            data.add(parseData(c));
+          }
+          if (lastIndex < input.length() - 1) {
+            String c = input.substring(lastIndex, input.length() - 1);
+            data.add(parseData(c));
+          }
+          return data;
+        }
+        throw new IllegalArgumentException("can't parse as list");
       }
-      return Integer.parseInt(value);
+    );
+  }
+
+  @SafeVarargs
+  private static Object tries(String value, Function<String, Object>...actions) {
+    for (Function<String, Object> consumer : actions) {
+      try {
+        return consumer.apply(value);
+      } catch (Throwable e) {
+        // can't parse data
+      }
     }
     return value;
   }
-
-  private static boolean isEmpty(CharSequence cs) {
-    return cs == null || cs.length() == 0;
-  }
-
-  private static boolean isNumeric(CharSequence cs) {
-    if (isEmpty(cs)) {
-      return false;
-    } else {
-      int sz = cs.length();
-
-      for(int i = 0; i < sz; ++i) {
-        if (!Character.isDigit(cs.charAt(i))) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-  }
-
 
 }
