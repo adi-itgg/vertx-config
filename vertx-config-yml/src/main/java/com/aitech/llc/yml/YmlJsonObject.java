@@ -17,7 +17,7 @@ public class YmlJsonObject {
   private final JsonObject jsonObject;
 
   public YmlJsonObject(JsonObject jsonObject) {
-    this.jsonObject = jsonObject;
+    this.jsonObject = jsonObject == null ? JsonObject.of() : jsonObject;
   }
 
   public static YmlJsonObject of(JsonObject config) {
