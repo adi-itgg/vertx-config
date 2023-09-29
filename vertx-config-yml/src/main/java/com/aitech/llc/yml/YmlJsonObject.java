@@ -81,6 +81,10 @@ public class YmlJsonObject {
     return defaultValue;
   }
 
+  public JsonObject getJsonObject() {
+    return jsonObject;
+  }
+
   public String getString(String key) {
     return getString(key, null);
   }
