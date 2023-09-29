@@ -81,6 +81,9 @@ public class YmlJsonObject {
     return defaultValue;
   }
 
+  public String getString(String key) {
+    return getString(key, null);
+  }
   public String getString(String key, String def) {
     Object val = getYmlValue(key);
     if (val == null) {
