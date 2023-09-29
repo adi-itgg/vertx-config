@@ -1,5 +1,6 @@
 package com.aitech.llc.yml;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.vertx.config.spi.ConfigProcessor;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -12,10 +13,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,7 +96,6 @@ public class YmlProcessor implements ConfigProcessor {
     return tries(value,
       Long::parseLong,
       Double::parseDouble,
-      Boolean::parseBoolean,
       (v) -> {
         if (v.charAt(0) == '[' && v.charAt(v.length() - 1) == ']') {
           String input = v.substring(1, v.length() - 1);
@@ -117,7 +114,14 @@ public class YmlProcessor implements ConfigProcessor {
           }
           return data;
         }
-        throw new IllegalArgumentException("can't parse as list");
+        throw new IllegalArgumentException("unsupported data type");
+      },
+      (v) -> {
+        String c = v.toLowerCase();
+        if (Arrays.asList("true", "false", "yes", "no").contains(c)) {
+          return Boolean.parseBoolean(c);
+        }
+        throw new IllegalArgumentException("unsupported data type");
       }
     );
   }
