@@ -37,7 +37,7 @@ public class YmlJsonObject {
       }
       return this;
     }
-    var temp = jsonObject;
+    JsonObject temp = jsonObject;
     for (int i = 0; i < sp.length; i++) {
       String key = sp[i];
       if ((i + 1) == sp.length) {
@@ -48,7 +48,7 @@ public class YmlJsonObject {
         }
         return this;
       }
-      var vo = temp.getJsonObject(key);
+      JsonObject vo = temp.getJsonObject(key);
       if (vo == null) {
         vo = JsonObject.of();
       }
@@ -175,6 +175,12 @@ public class YmlJsonObject {
   }
 
 
+  public YmlJsonObject getYmlJsonObject(String key) {
+    return YmlJsonObject.of(getJsonObject(key));
+  }
+  public YmlJsonObject getYmlJsonObject(String key, YmlJsonObject def) {
+    return YmlJsonObject.of(getJsonObject(key, def.jsonObject));
+  }
   public JsonObject getJsonObject(String key) {
     return getJsonObject(key, null);
   }
