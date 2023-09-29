@@ -1,6 +1,5 @@
 package com.aitech.llc.yml;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.vertx.config.spi.ConfigProcessor;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
